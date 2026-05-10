@@ -10,7 +10,7 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <AppRoutes />
-          <Toaster position="top-center" toastOptions={{ duration: 3500 }} />
+          <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

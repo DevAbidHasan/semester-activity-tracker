@@ -89,7 +89,7 @@ Responses are JSON. Successful payloads typically use `{ "success": true, "data"
 | PUT | `/api/exams/:id` | body | Update |
 | DELETE | `/api/exams/:id` | — | Delete |
 
-**Body:** `courseId`, `title`, `examType`, `examDate` (YYYY-MM-DD), `marks`, `gpaGrade`, `notes`
+**Body:** `courseId`, `title`, `examType`, `examDate` (YYYY-MM-DD), `marks`, `notes` (stored marks only; no GPA fields used)
 
 ---
 
@@ -136,7 +136,7 @@ Responses are JSON. Successful payloads typically use `{ "success": true, "data"
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/dashboard/stats` | Semester progress, assignment counts, upcoming exams, attendance %, credits, GPA heuristic |
+| GET | `/api/dashboard/stats` | Semester progress, assignment counts, upcoming exams, attendance %, credits, classes-by-course |
 
 ---
 

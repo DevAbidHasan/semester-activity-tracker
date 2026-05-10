@@ -58,20 +58,49 @@ async function stats(req, res, next) {
     );
     const credits = creditRows[0];
 
-    const [gradeRows] = await pool.query(
-      `SELECT AVG(marks_obtained / NULLIF(total_marks,0) * 100) AS avg_pct
-       FROM assignments
-       WHERE user_id = ? AND marks_obtained IS NOT NULL AND total_marks IS NOT NULL AND total_marks > 0`,
+    const [classWindowRows] = await pool.query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN session_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN 1 ELSE 0 END), 0) AS last7,
+         COALESCE(SUM(CASE WHEN session_date >= DATE_SUB(CURDATE(), INTERVAL 13 DAY) THEN 1 ELSE 0 END), 0) AS last14,
+         COUNT(*) AS last28
+       FROM attendance
+       WHERE user_id = ?
+         AND session_date >= DATE_SUB(CURDATE(), INTERVAL 27 DAY)
+         AND session_date <= CURDATE()`,
       [userId]
     );
-    const gradeAgg = gradeRows[0];
-    const [examRows] = await pool.query(
-      `SELECT AVG(marks) AS avg_marks FROM exams WHERE user_id = ? AND marks IS NOT NULL`,
-      [userId]
-    );
-    const examAgg = examRows[0];
+    const cw = classWindowRows[0] || { last7: 0, last14: 0, last28: 0 };
 
-    const gpaEstimate = estimateGpa(gradeAgg.avg_pct, examAgg.avg_marks);
+    /** Every course for the user, with session counts in the window (0 if none logged). */
+    const courseSessionsSql = (intervalDays) =>
+      pool.query(
+        `SELECT c.id AS course_id, c.title AS course_title, c.color AS course_color,
+                COALESCE(COUNT(a.id), 0) AS session_count
+         FROM courses c
+         LEFT JOIN attendance a
+           ON a.course_id = c.id
+           AND a.user_id = c.user_id
+           AND a.session_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+           AND a.session_date <= CURDATE()
+         WHERE c.user_id = ?
+         GROUP BY c.id, c.title, c.color
+         ORDER BY session_count DESC, c.title ASC`,
+        [intervalDays, userId]
+      );
+
+    const mapCourseRows = (rows) =>
+      rows.map((r) => ({
+        courseId: r.course_id,
+        courseTitle: r.course_title,
+        courseColor: r.course_color && /^#[0-9A-Fa-f]{6}$/i.test(r.course_color) ? r.course_color : '#6366f1',
+        sessions: Number(r.session_count) || 0,
+      }));
+
+    const [[by7], [by14], [by28]] = await Promise.all([
+      courseSessionsSql(6),
+      courseSessionsSql(13),
+      courseSessionsSql(27),
+    ]);
 
     res.json({
       success: true,
@@ -96,34 +125,21 @@ async function stats(req, res, next) {
           total: Number(credits.total_credits) || 0,
           courseCount: Number(credits.course_count) || 0,
         },
-        gradeOverview: {
-          assignmentAveragePercent: gradeAgg.avg_pct != null ? Math.round(gradeAgg.avg_pct * 10) / 10 : null,
-          examAverageMarks: examAgg.avg_marks != null ? Math.round(examAgg.avg_marks * 10) / 10 : null,
-          estimatedGpa: gpaEstimate,
+        classesHeld: {
+          totalLast7Days: Number(cw.last7) || 0,
+          totalLast14Days: Number(cw.last14) || 0,
+          totalLast28Days: Number(cw.last28) || 0,
+        },
+        classesByCourse: {
+          last7Days: mapCourseRows(by7),
+          last14Days: mapCourseRows(by14),
+          last28Days: mapCourseRows(by28),
         },
       },
     });
   } catch (e) {
     next(e);
   }
-}
-
-/** Simple 4.0 scale mapping from percentage (portfolio heuristic, not official). */
-function estimateGpa(assignmentAvgPct, examAvgMarks) {
-  let pct = assignmentAvgPct;
-  if (pct == null && examAvgMarks != null) pct = Math.min(100, examAvgMarks);
-  if (pct == null) return null;
-  if (pct >= 93) return 4.0;
-  if (pct >= 90) return 3.7;
-  if (pct >= 87) return 3.3;
-  if (pct >= 83) return 3.0;
-  if (pct >= 80) return 2.7;
-  if (pct >= 77) return 2.3;
-  if (pct >= 73) return 2.0;
-  if (pct >= 70) return 1.7;
-  if (pct >= 67) return 1.3;
-  if (pct >= 65) return 1.0;
-  return Math.round((pct / 100) * 4 * 10) / 10;
 }
 
 module.exports = { stats };

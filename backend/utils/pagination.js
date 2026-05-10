@@ -3,7 +3,7 @@
  */
 function getPagination(query, defaultLimit = 12) {
   const page = Math.max(1, parseInt(String(query.page || '1'), 10) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(String(query.limit || String(defaultLimit)), 10) || defaultLimit));
+  const limit = Math.min(200, Math.max(1, parseInt(String(query.limit || String(defaultLimit)), 10) || defaultLimit));
   const offset = (page - 1) * limit;
   return { page, limit, offset };
 }

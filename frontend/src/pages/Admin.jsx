@@ -62,7 +62,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Admin dashboard</h1>
         <p className="text-sm text-slate-600 dark:text-slate-400">System-wide analytics and user management.</p>
@@ -88,14 +88,17 @@ export default function Admin() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2" padding="p-0 overflow-hidden">
           <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-            <form onSubmit={search} className="flex flex-wrap gap-2">
+            <form
+              onSubmit={search}
+              className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-2"
+            >
               <input
                 placeholder="Search users…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="min-w-[200px] flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/80"
+                className="w-full min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/80"
               />
-              <Button type="submit" variant="outline">
+              <Button type="submit" variant="outline" className="w-full shrink-0 sm:w-auto">
                 Filter
               </Button>
             </form>

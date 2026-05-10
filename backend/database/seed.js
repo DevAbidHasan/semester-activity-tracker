@@ -128,7 +128,7 @@ async function main() {
   await conn.query(
     `INSERT INTO exams (user_id, course_id, title, exam_type, exam_date, marks, gpa_grade, notes) VALUES
      (?,?,?,?,?,?,?,?)`,
-    [userId, course1, 'Midterm Exam', 'midterm', '2026-05-18', 88, 'B+', 'Focus on graphs']
+    [userId, course1, 'Midterm Exam', 'midterm', '2026-05-18', 88, null, 'Focus on graphs']
   );
 
   await conn.query(`DELETE FROM schedules WHERE user_id = ?`, [userId]);

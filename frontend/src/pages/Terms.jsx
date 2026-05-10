@@ -71,8 +71,7 @@ export default function Terms() {
         <p className={p}>
           To the fullest extent permitted by law, the Services are provided “as is” without warranties of any kind,
           whether express or implied, including merchantability, fitness for a particular purpose, and non-infringement.
-          Academic estimates shown in the product are informational only and are not official grade or GPA calculations
-          unless your institution says otherwise.
+          Marks and attendance you enter are for your own planning; the product does not compute official grades or GPA.
         </p>
 
         <h2 className={h2}>8. Limitation of liability</h2>

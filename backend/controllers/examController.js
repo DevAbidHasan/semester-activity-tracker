@@ -73,7 +73,7 @@ async function create(req, res, next) {
         b.examType || 'midterm',
         examDate,
         b.marks ?? null,
-        b.gpaGrade || null,
+        null,
         b.notes || null,
       ]
     );

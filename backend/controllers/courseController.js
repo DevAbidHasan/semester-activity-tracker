@@ -8,13 +8,14 @@ async function list(req, res, next) {
     const { page, limit, offset } = getPagination(req.query, 12);
     const { column, direction } = sortClause(allowedSort, req.query.sort, req.query.order, 'created_at');
     const search = req.query.search ? `%${req.query.search}%` : null;
-    let where = 'user_id = ?';
+    // Qualify columns: list query joins `semesters` which also has `user_id` (ambiguous otherwise).
+    let where = 'c.user_id = ?';
     const params = [req.user.id];
     if (search) {
-      where += ' AND (title LIKE ? OR code LIKE ? OR instructor LIKE ?)';
+      where += ' AND (c.title LIKE ? OR c.code LIKE ? OR c.instructor LIKE ?)';
       params.push(search, search, search);
     }
-    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM courses WHERE ${where}`, params);
+    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM courses c WHERE ${where}`, params);
     const total = countRows[0].total;
     params.push(limit, offset);
     const [rows] = await pool.query(

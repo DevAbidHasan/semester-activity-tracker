@@ -89,7 +89,7 @@ export default function Notes() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Notes</h1>
@@ -100,18 +100,21 @@ export default function Notes() {
         </Button>
       </div>
 
-      <form onSubmit={search} className="flex flex-wrap gap-2">
-        <div className="relative min-w-[220px] flex-1">
+      <form
+        onSubmit={search}
+        className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-stretch md:grid-cols-[minmax(0,1fr)_auto_auto]"
+      >
+        <div className="relative min-w-0 sm:col-span-2 md:col-span-1">
           <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
-            className="w-full rounded-xl border border-slate-200 bg-white/90 py-2 pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-900/80"
+            className="w-full min-w-0 rounded-xl border border-slate-200 bg-white/90 py-2 pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-900/80"
             placeholder="Search title or body…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
         <select
-          className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/80"
+          className="w-full min-w-0 rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/80 sm:w-auto md:w-full md:max-w-56"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         >
@@ -122,7 +125,7 @@ export default function Notes() {
             </option>
           ))}
         </select>
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" className="w-full sm:w-auto">
           Search
         </Button>
       </form>

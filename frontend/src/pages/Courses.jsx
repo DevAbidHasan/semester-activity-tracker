@@ -45,8 +45,13 @@ export default function Courses() {
         setMeta(cRes.data.meta);
       }
       if (sRes.data.success) setSemesters(sRes.data.data);
-    } catch {
-      toast.error('Failed to load courses');
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          err.response?.data?.errors?.[0]?.msg ||
+          err.friendlyMessage ||
+          'Failed to load courses'
+      );
     } finally {
       setLoading(false);
     }
@@ -84,13 +89,23 @@ export default function Courses() {
 
   const save = async (e) => {
     e.preventDefault();
+    const wf = parseInt(String(form.weeklyClassFrequency), 10);
+    const weeklyClassFrequency = Number.isFinite(wf) && wf >= 1 ? wf : 1;
+    const cr = Number(form.credit);
+    const credit = Number.isFinite(cr) && cr >= 0 ? cr : 3;
     const payload = {
-      ...form,
+      title: form.title.trim(),
+      code: form.code.trim(),
+      instructor: form.instructor.trim() || undefined,
+      credit,
       semesterId: form.semesterId ? Number(form.semesterId) : null,
-      credit: Number(form.credit),
-      weeklyClassFrequency: Number(form.weeklyClassFrequency),
+      semesterLabel: form.semesterLabel.trim() || undefined,
+      weeklyClassFrequency,
+      classDays: form.classDays.trim() || undefined,
       classStartTime: form.classStartTime || undefined,
       classEndTime: form.classEndTime || undefined,
+      room: form.room.trim() || undefined,
+      color: form.color || '#6366f1',
     };
     try {
       if (editing) {
@@ -103,7 +118,12 @@ export default function Courses() {
       setModalOpen(false);
       load(meta.page);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Save failed');
+      const data = err.response?.data;
+      const first =
+        Array.isArray(data?.errors) && data.errors.length
+          ? `${data.errors[0].msg} (${data.errors[0].path})`
+          : null;
+      toast.error(first || data?.message || 'Save failed');
     }
   };
 
@@ -129,7 +149,7 @@ export default function Courses() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Courses</h1>
@@ -140,14 +160,17 @@ export default function Courses() {
         </Button>
       </div>
 
-      <form onSubmit={onSearch} className="flex flex-wrap gap-2">
+      <form
+        onSubmit={onSearch}
+        className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-2"
+      >
         <input
           placeholder="Search title, code, instructor…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="min-w-[200px] flex-1 rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/80"
+          className="w-full min-w-0 flex-1 rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/80"
         />
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" className="w-full shrink-0 sm:w-auto">
           Search
         </Button>
       </form>

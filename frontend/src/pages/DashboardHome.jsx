@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { STUDENT_BASE } from '../layouts/StudentLayout';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, CartesianGrid } from 'recharts';
-import { FiClipboard, FiBook, FiCalendar, FiTrendingUp } from 'react-icons/fi';
+import { FiClipboard, FiBook, FiCalendar, FiTrendingUp, FiChevronRight } from 'react-icons/fi';
 import api from '../services/api';
 import Card from '../components/Card';
+import CourseClassesViz from '../components/CourseClassesViz';
 import Spinner from '../components/Spinner';
 import { format } from 'date-fns';
 
@@ -73,24 +74,39 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map((s) => (
           <Link key={s.label} to={s.to}>
-            <Card className="h-full transition hover:-translate-y-0.5 hover:shadow-indigo-500/15">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{s.label}</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{s.value}</p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{s.hint}</p>
+            <Card
+              padding="p-3.5 sm:p-4"
+              className="h-full border border-indigo-200/80 bg-white shadow-md shadow-indigo-500/5 ring-1 ring-indigo-500/10 transition hover:-translate-y-0.5 hover:border-indigo-400/80 hover:shadow-lg hover:shadow-indigo-500/15 dark:border-indigo-500/30 dark:bg-slate-900 dark:shadow-black/30 dark:ring-indigo-400/15 dark:hover:border-indigo-400/45"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase leading-tight tracking-wide text-indigo-600 dark:text-indigo-300 sm:text-xs">
+                    {s.label}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums leading-tight tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                    {s.value}
+                  </p>
+                  <p className="mt-1 text-xs font-medium leading-snug text-slate-600 dark:text-slate-400">{s.hint}</p>
                 </div>
-                <span className="rounded-xl bg-indigo-500/10 p-3 text-indigo-600 dark:text-indigo-300">
-                  <s.icon className="h-5 w-5" />
+                <span className="shrink-0 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 p-2 text-white shadow-sm shadow-indigo-500/25 sm:p-2.5">
+                  <s.icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
                 </span>
               </div>
             </Card>
           </Link>
         ))}
       </div>
+
+      <Card>
+        <CourseClassesViz
+          classesByCourse={
+            stats?.classesByCourse ?? { last7Days: [], last14Days: [], last28Days: [] }
+          }
+        />
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -121,32 +137,74 @@ export default function DashboardHome() {
           </div>
         </Card>
 
-        <Card>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Upcoming exams</h2>
-          <ul className="mt-4 space-y-3">
+        <Card className="border-2 border-indigo-200/70 bg-linear-to-b from-white to-indigo-50/50 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/10 dark:border-indigo-500/35 dark:from-slate-900 dark:to-indigo-950/40 dark:shadow-black/30 dark:ring-indigo-400/15">
+          <div className="flex items-start justify-between gap-3 border-b border-indigo-200/60 pb-4 dark:border-indigo-500/25">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Schedule</p>
+              <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/30">
+                  <FiCalendar className="h-4 w-4" aria-hidden />
+                </span>
+                <span>Upcoming exams</span>
+              </h2>
+            </div>
+            <Link
+              to={`${STUDENT_BASE}/exams`}
+              className="group flex shrink-0 items-center gap-0.5 text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              View all
+              <FiChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden />
+            </Link>
+          </div>
+          <ul className="mt-5 space-y-4">
             {(stats?.upcomingExams || []).length === 0 && (
-              <p className="text-sm text-slate-500">No upcoming exams. Add some in the Exams tab.</p>
+              <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+                No upcoming exams.{' '}
+                <Link to={`${STUDENT_BASE}/exams`} className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  Add exams
+                </Link>{' '}
+                to see them here.
+              </p>
             )}
-            {(stats?.upcomingExams || []).map((ex) => (
+            {(stats?.upcomingExams || []).map((ex, idx) => (
               <li
                 key={ex.id}
-                className="rounded-xl border border-slate-100 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/60"
+                className={`relative overflow-hidden rounded-2xl border bg-white p-4 shadow-md transition hover:shadow-lg dark:bg-slate-900/95 ${
+                  idx === 0
+                    ? 'border-indigo-300/90 ring-2 ring-indigo-500/20 dark:border-indigo-500/50 dark:ring-indigo-400/25'
+                    : 'border-slate-200/90 dark:border-slate-700/90'
+                }`}
               >
-                <p className="font-medium text-slate-900 dark:text-white">{ex.title}</p>
-                <p className="text-xs text-slate-500">{ex.courseTitle}</p>
-                <p className="mt-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                  {format(new Date(ex.examDate), 'MMM d, yyyy')}
-                </p>
+                <div
+                  className="absolute inset-y-3 left-0 w-1.5 rounded-full"
+                  style={{ backgroundColor: ex.courseColor || '#6366f1' }}
+                  aria-hidden
+                />
+                <div className="pl-4">
+                  {idx === 0 && (
+                    <span className="mb-2 inline-block rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200">
+                      Next exam
+                    </span>
+                  )}
+                  <p className="text-lg font-bold leading-snug text-slate-900 dark:text-white">{ex.title}</p>
+                  <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">{ex.courseTitle}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <time
+                      dateTime={ex.examDate}
+                      className="inline-flex items-center rounded-lg bg-indigo-50 px-3 py-1.5 text-base font-bold tabular-nums text-indigo-900 dark:bg-indigo-950/80 dark:text-indigo-100"
+                    >
+                      {format(new Date(ex.examDate), 'EEE, MMM d, yyyy')}
+                    </time>
+                    {ex.examType && (
+                      <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium capitalize text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {ex.examType}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
-          <div className="mt-6 rounded-xl bg-gradient-to-r from-indigo-600/10 to-violet-600/10 p-4">
-            <p className="text-xs uppercase tracking-wide text-indigo-700 dark:text-indigo-300">Estimated GPA</p>
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-              {stats?.gradeOverview?.estimatedGpa != null ? stats.gradeOverview.estimatedGpa.toFixed(2) : '—'}
-            </p>
-            <p className="text-xs text-slate-600 dark:text-slate-400">Based on your assignments and exams</p>
-          </div>
         </Card>
       </div>
     </div>
