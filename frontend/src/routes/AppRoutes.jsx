@@ -3,6 +3,10 @@ import Landing from '../pages/Landing';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import NotFound from '../pages/NotFound';
+import PublicDocumentLayout from '../layouts/PublicDocumentLayout';
+import About from '../pages/About';
+import Privacy from '../pages/Privacy';
+import Terms from '../pages/Terms';
 import StudentLayout from '../layouts/StudentLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -16,7 +20,7 @@ import Notes from '../pages/Notes';
 import Settings from '../pages/Settings';
 import Admin from '../pages/Admin';
 
-/** Old `/dashboard/*` URLs → `/student/*` */
+/** Legacy dashboard URLs redirect into the student workspace. */
 function LegacyDashboardRedirect() {
   const { pathname } = useLocation();
   const rest = pathname.replace(/^\/dashboard\/?/, '');
@@ -30,6 +34,12 @@ export default function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
+      <Route element={<PublicDocumentLayout />}>
+        <Route path="/about" element={<About />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+      </Route>
 
       <Route path="/dashboard/*" element={<LegacyDashboardRedirect />} />
 

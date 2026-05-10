@@ -19,8 +19,8 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const fromPath = location.state?.from?.pathname || null;
-  const [email, setEmail] = useState('demo@semestertracker.dev');
-  const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
 
   const onSubmit = async (e) => {
@@ -55,6 +55,8 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
+              autoComplete="email"
+              placeholder="you@university.edu"
               required
             />
           </div>
@@ -65,6 +67,8 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
               required
             />
           </div>

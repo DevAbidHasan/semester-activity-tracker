@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 
-/** Base path for student-only routes — admins cannot access these URLs. */
+/** Student workspace base path in the router. */
 export const STUDENT_BASE = '/student';
 
 const nav = [

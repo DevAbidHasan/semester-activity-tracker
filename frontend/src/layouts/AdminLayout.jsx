@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 
-/** Admin-only area — separate from `/student`. */
+/** Admin-only shell (routes are configured in the app router). */
 export const ADMIN_BASE = '/admin';
 
 function ThemeToggle() {

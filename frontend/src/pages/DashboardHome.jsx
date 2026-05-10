@@ -96,7 +96,7 @@ export default function DashboardHome() {
         <Card className="lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Assignment workload</h2>
-            <span className="text-xs text-slate-500">Live from your account</span>
+            <span className="text-xs text-slate-500">Synced with your workspace</span>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -145,7 +145,7 @@ export default function DashboardHome() {
             <p className="text-2xl font-semibold text-slate-900 dark:text-white">
               {stats?.gradeOverview?.estimatedGpa != null ? stats.gradeOverview.estimatedGpa.toFixed(2) : '—'}
             </p>
-            <p className="text-xs text-slate-600 dark:text-slate-400">Heuristic from assignments & exams</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Based on your assignments and exams</p>
           </div>
         </Card>
       </div>

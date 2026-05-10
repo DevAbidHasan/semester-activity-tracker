@@ -146,7 +146,9 @@ export default function SemesterTracker() {
           <p className="mt-4 text-sm text-slate-700 dark:text-slate-200">
             Estimated GPA: <span className="font-semibold">{manualGpa ?? '—'}</span>
           </p>
-          <p className="mt-2 text-xs text-slate-500">API estimate: {stats?.gradeOverview?.estimatedGpa?.toFixed(2) ?? '—'}</p>
+          <p className="mt-2 text-xs text-slate-500">
+            Overview estimate: {stats?.gradeOverview?.estimatedGpa?.toFixed(2) ?? '—'}
+          </p>
         </Card>
       </div>
 
