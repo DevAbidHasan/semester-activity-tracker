@@ -1,95 +1,163 @@
 # Semester Tracker
 
-Portfolio-ready, full-stack **academic semester management** application. Registered students organize courses, assignments, exams, weekly schedules, notes, and attendance. Admins get a separate analytics dashboard.
+Full-stack web application for planning and tracking an academic semester: courses, assignments, exams, weekly schedules, notes, and attendance. Students use a dedicated workspace; administrators use a separate console for analytics and user management.
 
-## Stack
+---
 
-| Layer    | Technologies |
-|----------|----------------|
-| Frontend | React 19 (Vite), Tailwind CSS v4, React Router, Axios, Context API, React Icons, Recharts, React Hot Toast |
-| Backend  | Node.js, Express, MySQL (mysql2 pool), JWT, bcryptjs, express-validator, Helmet, CORS, Morgan |
-| Database | MySQL 8+ with relational schema and cascades |
+## Overview
 
-## Repository layout
+Semester Tracker is a portfolio-grade **React** app backed by a **Node.js** REST API and **MySQL**. Authentication uses JWTs; the UI supports light and dark themes, responsive layouts, and accessible patterns for forms and navigation.
+
+---
+
+## Tech stack
+
+| Area | Technologies |
+|------|----------------|
+| **Frontend** | React 19, Vite, Tailwind CSS v4, React Router, Axios, Context API, Recharts, React Hot Toast |
+| **Backend** | Node.js, Express, MySQL (`mysql2`), JWT, bcryptjs, express-validator, Helmet, CORS, Morgan |
+| **Database** | MySQL 8+ (relational schema, foreign keys, cascades) |
+
+---
+
+## Repository structure
 
 ```
 Semester-Tracker/
-├── frontend/     # Vite + React SPA
-├── backend/      # REST API (MVC-style folders)
+├── frontend/          # Vite + React SPA
+├── backend/           # Express REST API (controllers, routes, middleware)
+├── backend/database/  # SQL schema, optional seed script
 └── README.md
 ```
 
+---
+
 ## Prerequisites
 
-- **Node.js** 20+ recommended  
-- **MySQL** 8.x (local or remote)
+- **Node.js** 20 LTS or newer (recommended)
+- **MySQL** 8.x (local instance or remote host you control)
+- **npm** (ships with Node)
 
-## 1. Database setup
+---
 
-Create the schema (creates database `semester_tracker` and all tables):
+## Setup guide
+
+### 1. Clone the repository
 
 ```bash
-mysql -u root -p < backend/database/schema.sql
+git clone <your-repository-url>
+cd Semester-Tracker
 ```
 
-Copy environment files and edit credentials:
+### 2. Create the database
+
+Apply the schema (creates the application database and tables). Adjust the MySQL user, host, and path as needed for your environment.
+
+```bash
+mysql -u <user> -p < backend/database/schema.sql
+```
+
+### 3. Configure environment variables
+
+**Backend** — copy the example file and edit values (never commit real secrets):
 
 ```bash
 cp backend/.env.example backend/.env
+```
+
+Set at minimum:
+
+| Variable | Purpose |
+|----------|---------|
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | MySQL connection |
+| `JWT_SECRET` | Signing key for access tokens (use a long random string; rotate in production) |
+| `JWT_EXPIRES_IN` | Token lifetime (e.g. `7d`) |
+| `FRONTEND_URL` | Allowed browser origin for CORS (e.g. your Vite dev URL or production SPA URL) |
+| `PORT` | API listen port (default `5000`) |
+
+**Frontend** — optional for local development:
+
+```bash
 cp frontend/.env.example frontend/.env
 ```
 
-Edit `backend/.env` with your MySQL user, password, and database name. The repo expects database **`semester_tracker`** (see `DB_NAME`). If `backend/.env` is missing, copy from `.env.example` and fill in `DB_PASSWORD` (your MySQL user’s password—not a separate “database password” unless you configured one that way). Also set a long `JWT_SECRET` for anything beyond local dev.
+| Variable | Purpose |
+|----------|---------|
+| `VITE_API_URL` | Absolute API base URL for production builds. Leave empty in dev to use the Vite dev proxy (`/api` → backend). |
 
-## 2. Backend
+### 4. Install and run the API
 
 ```bash
 cd backend
 npm install
-npm run seed    # demo + admin accounts and sample academic rows
-npm run dev     # http://localhost:5000
+npm run dev
 ```
 
-**Seed accounts**
+The API listens on the port defined in `backend/.env` (default **http://localhost:5000**).
 
-| Role  | Email                     | Password     |
-|-------|---------------------------|--------------|
-| Admin | admin@semestertracker.dev | Password123! |
-| User  | demo@semestertracker.dev  | Password123! |
+### 5. Install and run the SPA
 
-The seed script clears prior demo rows for the demo user and repopulates courses, assignments, exams, schedules, notes, and attendance.
-
-## 3. Frontend
+In a separate terminal:
 
 ```bash
 cd frontend
 npm install
-npm run dev     # http://localhost:5173
+npm run dev
 ```
 
-The Vite dev server proxies `/api` to `http://localhost:5000` (override with `VITE_API_PROXY` in `vite.config.js` if needed). For production, set `VITE_API_URL` to your API origin.
+The dev server runs at **http://localhost:5173** by default and proxies `/api` to the backend (`VITE_API_PROXY` can override the proxy target in `frontend/vite.config.js`).
 
-**App routes (SPA):** students use **`/student`** and nested paths (e.g. `/student/courses`). Admins use **`/admin`** only. Old **`/dashboard…`** URLs redirect to the matching **`/student…`** path. After login, admins are sent to `/admin`, students to `/student`.
+### 6. (Optional) Local sample data
 
-## Features (high level)
+For UI and integration testing only, you may run the provided seed script after the schema exists and `.env` is configured:
 
-- JWT auth with **localStorage** persistence, Axios **interceptors**, protected routes, **user/admin** roles  
-- **Dashboard**: stats cards, charts (Recharts), upcoming exams, glassmorphism UI, dark/light/system theme  
-- **CRUD**: courses, assignments, exams, schedules, notes, semesters, attendance  
-- **Semester tracker** page: progress, calculators, quick attendance logging  
-- **Admin**: user list with search/pagination, delete users, system-wide analytics  
-- **UX**: toasts, loading states, empty states, responsive tables, mobile drawer navigation  
+```bash
+cd backend
+npm run seed
+```
 
-## API documentation
+Review `backend/database/seed.js` to understand what it inserts or resets. **Do not use default seed identities or passwords in production**; create real users through your registration flow or secure provisioning.
 
-See [`backend/API_DOCS.md`](backend/API_DOCS.md) for route-level reference.
+---
 
-## Production notes
+## Application routes (high level)
 
-- Rotate `JWT_SECRET` and use HTTPS in production.  
-- Tune CORS `FRONTEND_URL` to your deployed SPA origin.  
-- Run `npm run build` in `frontend` and serve `frontend/dist` via a static host or the same reverse proxy as the API.
+- **Students** — authenticated area under `/student` (dashboard, courses, assignments, exams, schedule, notes, semester tools).
+- **Administrators** — authenticated area under `/admin` (analytics, user directory, account actions).
+- **Public** — marketing and legal pages at `/`, `/login`, `/register`, `/about`, `/privacy`, `/terms`, etc.
+
+Post-login redirects are role-based (student vs admin).
+
+---
+
+## NPM scripts
+
+| Location | Command | Description |
+|----------|---------|-------------|
+| `backend/` | `npm run dev` | Start API with file watcher (nodemon) |
+| `backend/` | `npm start` | Start API (Node) |
+| `backend/` | `npm run seed` | Optional: populate sample rows (development only) |
+| `frontend/` | `npm run dev` | Vite dev server with HMR |
+| `frontend/` | `npm run build` | Production build to `frontend/dist` |
+| `frontend/` | `npm run preview` | Preview production build locally |
+
+---
+
+## API reference
+
+Route-level documentation lives in [`backend/API_DOCS.md`](backend/API_DOCS.md).
+
+---
+
+## Production checklist
+
+- Use strong, unique `JWT_SECRET` values and keep them out of version control.
+- Serve the API over **HTTPS** and restrict **CORS** to known SPA origins (`FRONTEND_URL`).
+- Build the frontend (`npm run build` in `frontend/`) and deploy `dist/` behind your CDN or reverse proxy alongside or in front of the API.
+- Run database migrations or schema updates through your own controlled process; avoid running development seed scripts against production databases.
+
+---
 
 ## License
 
-MIT — suitable for portfolios and classroom demos.
+MIT — see repository license terms for use in portfolios, coursework, and demos.
