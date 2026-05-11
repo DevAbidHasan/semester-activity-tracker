@@ -31,6 +31,7 @@ export default function Courses() {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [detailsCourse, setDetailsCourse] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
   const load = async (page = 1) => {
@@ -138,6 +139,8 @@ export default function Courses() {
     }
   };
 
+  const openDetails = (row) => setDetailsCourse(row);
+
   const onSearch = (e) => {
     e.preventDefault();
     load(1);
@@ -200,7 +203,11 @@ export default function Courses() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {rows.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40">
+                  <tr
+                    key={r.id}
+                    className="cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-900/40"
+                    onClick={() => openDetails(r)}
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <span
@@ -228,14 +235,20 @@ export default function Courses() {
                       <button
                         type="button"
                         className="mr-2 rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        onClick={() => openEdit(r)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(r);
+                        }}
                       >
                         <FiEdit2 />
                       </button>
                       <button
                         type="button"
                         className="rounded-lg p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                        onClick={() => remove(r.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          remove(r.id);
+                        }}
                       >
                         <FiTrash2 />
                       </button>
@@ -265,6 +278,80 @@ export default function Courses() {
           </div>
         )}
       </Card>
+
+      <Modal
+        open={Boolean(detailsCourse)}
+        onClose={() => setDetailsCourse(null)}
+        title="Course details"
+        wide
+      >
+        {detailsCourse ? (
+          <div className="space-y-6">
+            <div
+              className="h-1.5 w-full rounded-full"
+              style={{ backgroundColor: detailsCourse.color || '#6366f1' }}
+              aria-hidden
+            />
+            <div className="space-y-1">
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white">{detailsCourse.title}</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{detailsCourse.code}</p>
+            </div>
+
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/50">
+                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Instructor</dt>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{detailsCourse.instructor || '—'}</dd>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/50">
+                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Credits</dt>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{detailsCourse.credit}</dd>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/50">
+                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Semester</dt>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
+                  {detailsCourse.semesterName || detailsCourse.semesterLabel || '—'}
+                </dd>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/50">
+                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Weekly frequency</dt>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
+                  {detailsCourse.weeklyClassFrequency || 0} class{detailsCourse.weeklyClassFrequency === 1 ? '' : 'es'}
+                </dd>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/50 sm:col-span-2">
+                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Schedule</dt>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
+                  {detailsCourse.classDays || '—'}
+                  {detailsCourse.classStartTime && detailsCourse.classEndTime
+                    ? ` • ${detailsCourse.classStartTime.slice(0, 5)} - ${detailsCourse.classEndTime.slice(0, 5)}`
+                    : ''}
+                </dd>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/50 sm:col-span-2">
+                <dt className="text-xs font-medium text-slate-500 dark:text-slate-400">Room</dt>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{detailsCourse.room || '—'}</dd>
+              </div>
+            </dl>
+
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+              <Button type="button" variant="ghost" onClick={() => setDetailsCourse(null)}>
+                Close
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const row = detailsCourse;
+                  setDetailsCourse(null);
+                  openEdit(row);
+                }}
+              >
+                <FiEdit2 /> Edit
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit course' : 'New course'} wide>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={save}>

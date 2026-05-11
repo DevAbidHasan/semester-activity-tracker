@@ -10,11 +10,11 @@ import Terms from '../pages/Terms';
 import StudentLayout from '../layouts/StudentLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
-import DashboardHome from '../pages/DashboardHome';
 import Courses from '../pages/Courses';
 import Assignments from '../pages/Assignments';
 import Exams from '../pages/Exams';
-import Schedule from '../pages/Schedule';
+import Attendance from '../pages/Attendance';
+import Report from '../pages/Report';
 import SemesterTracker from '../pages/SemesterTracker';
 import Notes from '../pages/Notes';
 import Settings from '../pages/Settings';
@@ -45,11 +45,13 @@ export default function AppRoutes() {
 
       <Route element={<ProtectedRoute studentOnly />}>
         <Route path="/student" element={<StudentLayout />}>
-          <Route index element={<DashboardHome />} />
+          <Route index element={<Report />} />
           <Route path="courses" element={<Courses />} />
           <Route path="assignments" element={<Assignments />} />
           <Route path="exams" element={<Exams />} />
-          <Route path="schedule" element={<Schedule />} />
+          <Route path="attendance" element={<Attendance />} />
+          <Route path="report" element={<Navigate to="/student" replace />} />
+          <Route path="schedule" element={<Navigate to="/student/attendance" replace />} />
           <Route path="tracker" element={<SemesterTracker />} />
           <Route path="notes" element={<Notes />} />
           <Route path="settings" element={<Settings />} />

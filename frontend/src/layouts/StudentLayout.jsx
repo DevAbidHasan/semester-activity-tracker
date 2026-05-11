@@ -27,7 +27,7 @@ const nav = [
   { to: `${STUDENT_BASE}/courses`, label: 'Courses', icon: FiBook },
   { to: `${STUDENT_BASE}/assignments`, label: 'Assignments', icon: FiClipboard },
   { to: `${STUDENT_BASE}/exams`, label: 'Exams', icon: FiTrendingUp },
-  { to: `${STUDENT_BASE}/schedule`, label: 'Schedule', icon: FiCalendar },
+  { to: `${STUDENT_BASE}/attendance`, label: 'Attendance', icon: FiCalendar },
   { to: `${STUDENT_BASE}/tracker`, label: 'Semester', icon: FiBarChart2 },
   { to: `${STUDENT_BASE}/notes`, label: 'Notes', icon: FiEdit3 },
   { to: `${STUDENT_BASE}/settings`, label: 'Settings', icon: FiSettings },

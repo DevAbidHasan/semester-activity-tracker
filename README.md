@@ -6,7 +6,7 @@ Full-stack web application for planning and tracking an academic semester: cours
 
 ## Overview
 
-Semester Tracker is a portfolio-grade **React** app backed by a **Node.js** REST API and **MySQL**. Authentication uses JWTs; the UI supports light and dark themes, responsive layouts, and accessible patterns for forms and navigation.
+Semester Tracker is a portfolio-grade **React** single-page app backed by a **Node.js** REST API and **MySQL**. Authentication uses JWTs; the UI supports light and dark themes, responsive layouts, and accessible patterns for forms and navigation.
 
 ---
 

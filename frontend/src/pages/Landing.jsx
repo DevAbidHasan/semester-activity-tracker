@@ -186,9 +186,6 @@ export default function Landing() {
             <a href="#features" className="transition hover:text-slate-900 dark:hover:text-white">
               Features
             </a>
-            <a href="#how-it-works" className="transition hover:text-slate-900 dark:hover:text-white">
-              How it works
-            </a>
             <a href="#stats" className="transition hover:text-slate-900 dark:hover:text-white">
               Highlights
             </a>
@@ -269,9 +266,6 @@ export default function Landing() {
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
           <a href="#features" className={mobileNavLink} onClick={closeMobileMenu}>
             Features
-          </a>
-          <a href="#how-it-works" className={mobileNavLink} onClick={closeMobileMenu}>
-            How it works
           </a>
           <a href="#stats" className={mobileNavLink} onClick={closeMobileMenu}>
             Highlights
