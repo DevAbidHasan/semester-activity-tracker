@@ -3,6 +3,11 @@ const { getPagination, sortClause } = require('../utils/pagination');
 
 const allowedSort = ['title', 'created_at', 'updated_at'];
 
+/** MySQL ER_BAD_FIELD_ERROR — e.g. notes.link_url missing on older DBs */
+function isMissingLinkUrlColumnError(e) {
+  return e && (e.errno === 1054 || e.code === 'ER_BAD_FIELD_ERROR') && String(e.sqlMessage || '').includes('link_url');
+}
+
 async function list(req, res, next) {
   try {
     const { page, limit, offset } = getPagination(req.query, 12);
@@ -21,13 +26,27 @@ async function list(req, res, next) {
     const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM notes WHERE ${where}`, params);
     const total = countRows[0].total;
     const listParams = [...params, limit, offset];
-    const [rows] = await pool.query(
-      `SELECT id, title, LEFT(content, 200) AS excerpt, category, created_at, updated_at
-       FROM notes WHERE ${where}
-       ORDER BY ${column} ${direction}
-       LIMIT ? OFFSET ?`,
-      listParams
-    );
+    let rows;
+    try {
+      const [r] = await pool.query(
+        `SELECT id, title, LEFT(content, 200) AS excerpt, category, link_url, created_at, updated_at
+         FROM notes WHERE ${where}
+         ORDER BY ${column} ${direction}
+         LIMIT ? OFFSET ?`,
+        listParams
+      );
+      rows = r;
+    } catch (e) {
+      if (!isMissingLinkUrlColumnError(e)) throw e;
+      const [r] = await pool.query(
+        `SELECT id, title, LEFT(content, 200) AS excerpt, category, created_at, updated_at
+         FROM notes WHERE ${where}
+         ORDER BY ${column} ${direction}
+         LIMIT ? OFFSET ?`,
+        listParams
+      );
+      rows = r;
+    }
     res.json({
       success: true,
       data: rows.map((r) => ({
@@ -35,6 +54,7 @@ async function list(req, res, next) {
         title: r.title,
         excerpt: r.excerpt,
         category: r.category,
+        linkUrl: r.link_url ?? null,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       })),
@@ -60,6 +80,7 @@ async function getById(req, res, next) {
         title: n.title,
         content: n.content,
         category: n.category,
+        linkUrl: n.link_url != null ? n.link_url : null,
         createdAt: n.created_at,
         updatedAt: n.updated_at,
       },
@@ -72,10 +93,19 @@ async function getById(req, res, next) {
 async function create(req, res, next) {
   try {
     const b = req.body;
-    const [result] = await pool.query(
-      `INSERT INTO notes (user_id, title, content, category) VALUES (?,?,?,?)`,
-      [req.user.id, b.title, b.content, b.category || null]
-    );
+    let result;
+    try {
+      [result] = await pool.query(
+        `INSERT INTO notes (user_id, title, content, category, link_url) VALUES (?,?,?,?,?)`,
+        [req.user.id, b.title, b.content, b.category || null, b.linkUrl || null]
+      );
+    } catch (e) {
+      if (!isMissingLinkUrlColumnError(e)) throw e;
+      [result] = await pool.query(
+        `INSERT INTO notes (user_id, title, content, category) VALUES (?,?,?,?)`,
+        [req.user.id, b.title, b.content, b.category || null]
+      );
+    }
     const [rows] = await pool.query('SELECT * FROM notes WHERE id = ?', [result.insertId]);
     const n = rows[0];
     res.status(201).json({
@@ -85,6 +115,7 @@ async function create(req, res, next) {
         title: n.title,
         content: n.content,
         category: n.category,
+        linkUrl: n.link_url != null ? n.link_url : null,
         createdAt: n.created_at,
         updatedAt: n.updated_at,
       },
@@ -106,18 +137,40 @@ async function update(req, res, next) {
       ['title', b.title],
       ['content', b.content],
       ['category', b.category],
+      ['link_url', b.linkUrl],
     ];
     const fields = [];
     const vals = [];
     for (const [col, val] of map) {
       if (val !== undefined) {
         fields.push(`${col} = ?`);
-        vals.push(val === '' && col === 'category' ? null : val);
+        const v =
+          val === '' && (col === 'category' || col === 'link_url')
+            ? null
+            : val;
+        vals.push(v);
       }
     }
     if (!fields.length) return res.status(400).json({ success: false, message: 'No fields to update' });
     vals.push(req.params.id, req.user.id);
-    await pool.query(`UPDATE notes SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`, vals);
+    try {
+      await pool.query(`UPDATE notes SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`, vals);
+    } catch (e) {
+      if (!isMissingLinkUrlColumnError(e)) throw e;
+      const mapNoLink = map.filter(([col]) => col !== 'link_url');
+      const fields2 = [];
+      const vals2 = [];
+      for (const [col, val] of mapNoLink) {
+        if (val !== undefined) {
+          fields2.push(`${col} = ?`);
+          const v = val === '' && col === 'category' ? null : val;
+          vals2.push(v);
+        }
+      }
+      if (!fields2.length) return res.status(400).json({ success: false, message: 'No fields to update' });
+      vals2.push(req.params.id, req.user.id);
+      await pool.query(`UPDATE notes SET ${fields2.join(', ')} WHERE id = ? AND user_id = ?`, vals2);
+    }
     const [rows] = await pool.query('SELECT * FROM notes WHERE id = ?', [req.params.id]);
     const n = rows[0];
     res.json({
@@ -127,6 +180,7 @@ async function update(req, res, next) {
         title: n.title,
         content: n.content,
         category: n.category,
+        linkUrl: n.link_url != null ? n.link_url : null,
         createdAt: n.created_at,
         updatedAt: n.updated_at,
       },

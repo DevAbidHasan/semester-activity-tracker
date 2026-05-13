@@ -11,10 +11,33 @@ const listQuery = [
   query('order').optional().isIn(['asc', 'desc']),
 ];
 
+const linkUrlBody = body('linkUrl')
+  .optional({ nullable: true, checkFalsy: true })
+  .trim()
+  .isLength({ max: 2000 })
+  .custom((val) => {
+    if (!val) return true;
+    try {
+      // eslint-disable-next-line no-new
+      new URL(val);
+      return true;
+    } catch {
+      throw new Error('Invalid URL');
+    }
+  });
+
 const createNoteRules = [
   body('title').trim().notEmpty().isLength({ max: 255 }),
   body('content').notEmpty(),
-  body('category').optional().trim().isLength({ max: 120 }),
+  body('category').optional({ nullable: true }).trim().isLength({ max: 120 }),
+  linkUrlBody,
 ];
 
-module.exports = { idParam, listQuery, createNoteRules };
+const updateNoteRules = [
+  body('title').optional().trim().notEmpty().isLength({ max: 255 }),
+  body('content').optional().notEmpty(),
+  body('category').optional({ nullable: true }).trim().isLength({ max: 120 }),
+  linkUrlBody,
+];
+
+module.exports = { idParam, listQuery, createNoteRules, updateNoteRules };

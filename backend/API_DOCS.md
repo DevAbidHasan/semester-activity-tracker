@@ -114,7 +114,7 @@ Responses are JSON. Successful payloads typically use `{ "success": true, "data"
 | GET | `/api/notes/categories` | — | Distinct categories |
 | GET | `/api/notes` | `page`, `limit`, `q`, `category`, `sort`, `order` | List (excerpt) |
 | GET | `/api/notes/:id` | — | Full note |
-| POST | `/api/notes` | `{ title, content, category? }` | Create |
+| POST | `/api/notes` | `{ title, content, category?, linkUrl? }` | Create |
 | PUT | `/api/notes/:id` | partial | Update |
 | DELETE | `/api/notes/:id` | — | Delete |
 

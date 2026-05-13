@@ -9,6 +9,8 @@ const pool = mysql.createPool({
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'semester_tracker',
+  /** Avoid JS Date for DATE/DATETIME — prevents UTC off-by-one when clients use YYYY-MM-DD slices. */
+  dateStrings: true,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

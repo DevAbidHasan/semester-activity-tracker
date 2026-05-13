@@ -95,6 +95,62 @@ export default function SemesterTracker() {
     return Math.min(100, Math.max(0, Number(p)));
   }, [stats?.semesterProgressPercent]);
 
+  const progressMeta = stats?.semesterProgressMeta ?? null;
+
+  const currentSemesterRow = useMemo(() => semesters.find((s) => s.isCurrent) ?? null, [semesters]);
+
+  const [termDates, setTermDates] = useState({ startDate: '', endDate: '' });
+
+  useEffect(() => {
+    if (!currentSemesterRow) {
+      setTermDates({ startDate: '', endDate: '' });
+      return;
+    }
+    setTermDates({
+      startDate: currentSemesterRow.startDate ? String(currentSemesterRow.startDate).slice(0, 10) : '',
+      endDate: currentSemesterRow.endDate ? String(currentSemesterRow.endDate).slice(0, 10) : '',
+    });
+  }, [currentSemesterRow?.id, currentSemesterRow?.startDate, currentSemesterRow?.endDate]);
+
+  const formatAxisDate = (d) => {
+    if (!d) return null;
+    const p = parseISO(String(d).slice(0, 10));
+    return isValid(p) ? format(p, 'MMM d') : null;
+  };
+
+  const timelineCaption = useMemo(() => {
+    if (!progressMeta) return null;
+    const { mode, totalDays, elapsedDays } = progressMeta;
+    if (mode === 'range') {
+      return `About ${elapsedDays} of ${totalDays} days along your term (start → end).`;
+    }
+    if (mode === 'start-only') {
+      return `No end date yet — progress assumes a ~17-week term from your start (~${totalDays} days). Add an end date for an exact timeline.`;
+    }
+    if (mode === 'end-only') {
+      return `No start date — progress assumes a ~17-week window leading to your end date. Add a start date for an exact timeline.`;
+    }
+    return null;
+  }, [progressMeta]);
+
+  const saveTermDates = async (e) => {
+    e.preventDefault();
+    if (!currentSemesterRow) return;
+    setSemesterSaving(true);
+    try {
+      await api.put(`/semesters/${currentSemesterRow.id}`, {
+        startDate: termDates.startDate || null,
+        endDate: termDates.endDate || null,
+      });
+      toast.success('Term dates saved — timeline updated');
+      await load({ silent: true });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not save dates');
+    } finally {
+      setSemesterSaving(false);
+    }
+  };
+
   const setCurrentSemester = async (id) => {
     setSemesterSaving(true);
     try {
@@ -243,6 +299,50 @@ export default function SemesterTracker() {
           </p>
         )}
 
+        {currentSemesterRow && (
+          <form
+            className="mt-6 rounded-xl border border-indigo-200/70 bg-indigo-50/50 p-4 dark:border-indigo-500/30 dark:bg-indigo-950/25"
+            onSubmit={saveTermDates}
+          >
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Timeline — term dates</h3>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+              Progress for <span className="font-medium text-slate-800 dark:text-slate-200">{currentSemesterRow.name}</span>{' '}
+              is based on these dates. With both set, the bar reflects how far today sits between start and end.
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="cur-sem-start" className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                  Start date
+                </label>
+                <input
+                  id="cur-sem-start"
+                  type="date"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-900/80"
+                  value={termDates.startDate}
+                  onChange={(e) => setTermDates({ ...termDates, startDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor="cur-sem-end" className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                  End date
+                </label>
+                <input
+                  id="cur-sem-end"
+                  type="date"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-900/80"
+                  value={termDates.endDate}
+                  onChange={(e) => setTermDates({ ...termDates, endDate: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="mt-3">
+              <Button type="submit" variant="outline" disabled={semesterSaving}>
+                Save term dates
+              </Button>
+            </div>
+          </form>
+        )}
+
         <form className="mt-6 border-t border-slate-100 pt-6 dark:border-slate-800" onSubmit={createSemester}>
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Add a semester</h3>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -320,26 +420,63 @@ export default function SemesterTracker() {
         <Card padding="p-4 sm:p-5" className="border border-indigo-200/60 ring-1 ring-indigo-500/10 dark:border-indigo-500/25">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Timeline</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Semester timeline &amp; progress</p>
               <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900 dark:text-white">
                 {semesterPct != null ? `${Math.round(semesterPct)}%` : '—'}
               </p>
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                {stats?.currentSemester?.name ||
-                  'Add a semester above and mark it current, or choose “Set as current” on an existing term.'}
+                {stats?.currentSemester?.name ? (
+                  <>
+                    Current term:{' '}
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{stats.currentSemester.name}</span>
+                  </>
+                ) : (
+                  'Add a semester, mark it current, and set dates above so this timeline can run.'
+                )}
               </p>
             </div>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25">
               <FiTrendingUp className="h-5 w-5" aria-hidden />
             </span>
           </div>
-          {semesterPct != null && (
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200/90 dark:bg-slate-700/80">
-              <div
-                className="h-full rounded-full bg-linear-to-r from-indigo-500 to-violet-500 transition-[width] duration-500 ease-out"
-                style={{ width: `${semesterPct}%` }}
-              />
+
+          {stats?.currentSemester && (stats.currentSemester.startDate || stats.currentSemester.endDate) && (
+            <div className="mt-5">
+              <div className="flex justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <span className="min-w-0 truncate">{formatAxisDate(stats.currentSemester.startDate) || 'Start'}</span>
+                <span className="shrink-0 text-slate-400 dark:text-slate-500">Today · {format(new Date(), 'MMM d')}</span>
+                <span className="min-w-0 truncate text-right">
+                  {formatAxisDate(stats.currentSemester.endDate) || 'End'}
+                </span>
+              </div>
+              <div className="relative mt-2 h-3.5 overflow-hidden rounded-full bg-slate-200/90 dark:bg-slate-700/80">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-[width] duration-500 ease-out"
+                  style={{ width: `${semesterPct != null ? Math.min(100, semesterPct) : 0}%` }}
+                />
+                {semesterPct != null && semesterPct > 0 && (
+                  <span
+                    className="pointer-events-none absolute top-1/2 z-10 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-md ring-2 ring-indigo-600 dark:ring-indigo-400"
+                    style={{ left: `${Math.min(100, Math.max(0, semesterPct))}%` }}
+                    title="Progress through the term"
+                  />
+                )}
+              </div>
             </div>
+          )}
+
+          {semesterPct == null && stats?.currentSemester && (
+            <p className="mt-4 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+              Set a <span className="font-medium">start</span> and/or <span className="font-medium">end</span> date for
+              your current semester in <span className="font-medium">Timeline — term dates</span> above. With only one
+              date, we estimate a ~17-week term; with both, progress follows your exact range.
+            </p>
+          )}
+
+          {timelineCaption && (
+            <p className="mt-3 border-t border-slate-100 pt-3 text-xs leading-relaxed text-slate-500 dark:border-slate-800 dark:text-slate-400">
+              {timelineCaption}
+            </p>
           )}
         </Card>
 

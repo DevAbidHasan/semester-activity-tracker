@@ -1,5 +1,15 @@
 const { pool } = require('../config/db');
 
+/** Normalize client dates (YYYY-MM-DD or ISO datetime) for MySQL DATE columns. */
+function bodyDateToSql(val) {
+  if (val === undefined) return undefined;
+  if (val === null || val === '') return null;
+  const s = String(val).trim();
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(s);
+  if (m) return m[1];
+  return null;
+}
+
 async function list(req, res, next) {
   try {
     const [rows] = await pool.query(
@@ -38,8 +48,8 @@ async function create(req, res, next) {
         req.user.id,
         b.name,
         b.academicYear || null,
-        b.startDate ? String(b.startDate).slice(0, 10) : null,
-        b.endDate ? String(b.endDate).slice(0, 10) : null,
+        b.startDate ? bodyDateToSql(b.startDate) : null,
+        b.endDate ? bodyDateToSql(b.endDate) : null,
         Boolean(b.isCurrent),
       ]
     );
@@ -67,8 +77,8 @@ async function update(req, res, next) {
     const map = [
       ['name', b.name],
       ['academic_year', b.academicYear],
-      ['start_date', b.startDate !== undefined ? (b.startDate ? String(b.startDate).slice(0, 10) : null) : undefined],
-      ['end_date', b.endDate !== undefined ? (b.endDate ? String(b.endDate).slice(0, 10) : null) : undefined],
+      ['start_date', b.startDate !== undefined ? (b.startDate ? bodyDateToSql(b.startDate) : null) : undefined],
+      ['end_date', b.endDate !== undefined ? (b.endDate ? bodyDateToSql(b.endDate) : null) : undefined],
       ['is_current', b.isCurrent !== undefined ? (b.isCurrent ? 1 : 0) : undefined],
     ];
     const fields = [];
@@ -104,12 +114,18 @@ function mapRow(row) {
     id: row.id,
     name: row.name,
     academicYear: row.academic_year,
-    startDate: row.start_date,
-    endDate: row.end_date,
+    startDate: rowDateToIso(row.start_date),
+    endDate: rowDateToIso(row.end_date),
     isCurrent: Boolean(row.is_current),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function rowDateToIso(val) {
+  if (val == null || val === '') return null;
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(val).trim());
+  return m ? m[1] : null;
 }
 
 module.exports = { list, getById, create, update, remove };

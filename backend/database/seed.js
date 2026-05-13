@@ -156,8 +156,14 @@ async function main() {
 
   await conn.query(`DELETE FROM notes WHERE user_id = ?`, [userId]);
   await conn.query(
-    `INSERT INTO notes (user_id, title, content, category) VALUES (?,?,?,?)`,
-    [userId, 'Exam checklist', 'Review sorting, hashing, and graph algorithms.', 'Planning']
+    `INSERT INTO notes (user_id, title, content, category, link_url) VALUES (?,?,?,?,?)`,
+    [
+      userId,
+      'Exam checklist',
+      'Review sorting, hashing, and graph algorithms.',
+      'urgent',
+      'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort',
+    ]
   );
 
   await conn.query(`DELETE FROM attendance WHERE user_id = ?`, [userId]);

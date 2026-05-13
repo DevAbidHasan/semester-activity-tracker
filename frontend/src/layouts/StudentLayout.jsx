@@ -130,7 +130,7 @@ export default function StudentLayout() {
       <div className="lg:pl-72">
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200/90 bg-white/95 px-4 py-2 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/90 sm:gap-4 sm:px-8">
           <Link
-            to={STUDENT_BASE}
+            to="/"
             className="flex min-w-0 shrink-0 items-center gap-2 lg:hidden"
             onClick={closeDrawer}
           >

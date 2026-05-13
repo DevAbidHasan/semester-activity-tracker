@@ -343,14 +343,13 @@ export default function Report() {
 
       autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 18,
-        head: [['Course', 'Attendance %', 'Class Sessions', 'Assignments (done/total)', 'Exams', 'Graded Exams']],
+        head: [['Course', 'Attendance %', 'Classes (attended/total)', 'Assignments (done/total)', 'Exams']],
         body: derived.perCourse.map((c) => [
           `${c.courseCode} - ${c.courseTitle}`,
-          c.attendanceTotal ? `${c.attendancePct}%` : '—',
-          String(c.attendanceTotal),
+          c.attendanceTotal > 0 ? `${c.attendancePct}%` : '—',
+          c.attendanceTotal > 0 ? `${c.attendancePresentLike}/${c.attendanceTotal}` : '—',
           `${c.assignmentsDone}/${c.assignmentsTotal}`,
           String(c.examsTotal),
-          String(c.gradedExams),
         ]),
         theme: 'striped',
         headStyles: { fillColor: [15, 23, 42] },
@@ -622,14 +621,40 @@ export default function Report() {
                   <tr>
                     <th className="px-4 py-3 font-medium">Course</th>
                     <th className="px-4 py-3 font-medium">Attendance %</th>
-                    <th className="px-4 py-3 font-medium">Class sessions</th>
+                    <th
+                      className="px-4 py-3 font-medium"
+                      title="Present or late sessions you logged, out of all class sessions recorded for this course."
+                    >
+                      Classes (attended / total)
+                    </th>
                     <th className="px-4 py-3 font-medium">Assignments (done/total)</th>
                     <th className="px-4 py-3 font-medium">Exams</th>
-                    <th className="px-4 py-3 font-medium">Graded exams</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {derived.perCourse.map((c) => (
+                  {derived.perCourse.map((c) => {
+                    const attendanceStrong =
+                      c.attendanceTotal > 0 && c.attendancePct > 94;
+                    const attendanceWeak =
+                      c.attendanceTotal > 0 && c.attendancePct < 85;
+                    const assignmentsAllDone =
+                      c.assignmentsTotal > 0 && c.assignmentsDone === c.assignmentsTotal;
+                    const examsAllParticipated =
+                      c.examsTotal > 0 && c.gradedExams === c.examsTotal;
+                    const cellBase = 'px-4 py-3 tabular-nums text-slate-700 dark:text-slate-300';
+                    const cellGreen =
+                      'px-4 py-3 tabular-nums font-semibold text-emerald-600 dark:text-emerald-400';
+                    const cellRed =
+                      'px-4 py-3 tabular-nums font-semibold text-red-600 dark:text-red-400';
+                    const attendanceCellClass =
+                      c.attendanceTotal > 0
+                        ? attendanceStrong
+                          ? cellGreen
+                          : attendanceWeak
+                            ? cellRed
+                            : cellBase
+                        : cellBase;
+                    return (
                     <tr key={c.courseId} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/30">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
@@ -640,17 +665,19 @@ export default function Report() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 tabular-nums">
+                      <td className={attendanceCellClass}>
                         {c.attendanceTotal > 0 ? `${c.attendancePct}%` : '—'}
                       </td>
-                      <td className="px-4 py-3 tabular-nums">{c.attendanceTotal}</td>
-                      <td className="px-4 py-3 tabular-nums">
+                      <td className={attendanceCellClass}>
+                        {c.attendanceTotal > 0 ? `${c.attendancePresentLike}/${c.attendanceTotal}` : '—'}
+                      </td>
+                      <td className={assignmentsAllDone ? cellGreen : cellBase}>
                         {c.assignmentsDone}/{c.assignmentsTotal}
                       </td>
-                      <td className="px-4 py-3 tabular-nums">{c.examsTotal}</td>
-                      <td className="px-4 py-3 tabular-nums">{c.gradedExams}</td>
+                      <td className={examsAllParticipated ? cellGreen : cellBase}>{c.examsTotal}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -661,29 +688,34 @@ export default function Report() {
               padding="p-5"
               className="relative overflow-hidden !bg-gradient-to-br from-emerald-50/95 via-white/90 to-teal-50/60 border-2 border-emerald-400/70 shadow-lg shadow-emerald-500/15 ring-1 ring-emerald-300/40 dark:from-emerald-950/50 dark:via-slate-900/90 dark:to-emerald-950/30 dark:border-emerald-500/45 dark:shadow-emerald-950/30 dark:ring-emerald-500/25"
             >
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 opacity-90 dark:from-emerald-500 dark:via-teal-500 dark:to-emerald-400" />
-              <div className="flex items-start justify-between gap-3 pt-0.5">
-                <div className="flex min-w-0 gap-3">
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-[3px] rounded-t-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 dark:from-emerald-500 dark:via-teal-500 dark:to-emerald-400"
+                aria-hidden
+              />
+              <header className="relative z-10 flex min-h-13 items-center justify-between gap-3 border-b border-emerald-200/55 pb-3.5 dark:border-emerald-800/35">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <span
-                    className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 shadow-inner shadow-emerald-500/10 dark:bg-emerald-500/25 dark:text-emerald-200"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-400/25 dark:bg-emerald-500/20 dark:text-emerald-200 dark:ring-emerald-500/30"
                     aria-hidden
                   >
-                    <FiCalendar className="h-5 w-5" />
+                    <FiCalendar className="h-[18px] w-[18px]" strokeWidth={2.25} />
                   </span>
-                  <div className="min-w-0">
-                    <h2 className="text-base font-semibold text-emerald-950 dark:text-emerald-100">Upcoming exams</h2>
-                    <p className="mt-1 text-xs font-medium text-emerald-800/80 dark:text-emerald-200/80">
+                  <div className="min-w-0 py-0.5">
+                    <h2 className="text-base font-semibold leading-tight tracking-tight text-emerald-950 dark:text-emerald-50">
+                      Upcoming exams
+                    </h2>
+                    <p className="mt-0.5 text-[11px] font-medium leading-snug text-emerald-800/85 dark:text-emerald-200/85">
                       Next on your calendar
                     </p>
                   </div>
                 </div>
                 <Link
                   to={`${STUDENT_BASE}/exams`}
-                  className="shrink-0 rounded-xl border border-emerald-300/80 bg-white/90 px-3 py-2 text-xs font-semibold text-emerald-900 shadow-sm transition hover:border-emerald-500 hover:bg-emerald-50 dark:border-emerald-600/50 dark:bg-emerald-950/40 dark:text-emerald-100 dark:hover:border-emerald-400 dark:hover:bg-emerald-900/60"
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-emerald-300/90 bg-white/95 px-3.5 text-xs font-semibold text-emerald-900 shadow-sm transition hover:border-emerald-500 hover:bg-emerald-50/90 dark:border-emerald-600/55 dark:bg-emerald-950/50 dark:text-emerald-50 dark:hover:border-emerald-400 dark:hover:bg-emerald-900/55"
                 >
                   View all
                 </Link>
-              </div>
+              </header>
               <ul className="mt-4 space-y-3">
                 {derived.upcomingExamsPreview.length === 0 ? (
                   <li className="rounded-xl border border-dashed border-emerald-300/70 bg-white/50 px-3 py-6 text-center text-sm text-emerald-800/70 dark:border-emerald-600/40 dark:bg-emerald-950/20 dark:text-emerald-200/70">
@@ -718,29 +750,34 @@ export default function Report() {
               padding="p-5"
               className="relative overflow-hidden !bg-gradient-to-br from-amber-50/95 via-white/90 to-orange-50/60 border-2 border-amber-400/70 shadow-lg shadow-amber-500/15 ring-1 ring-amber-300/40 dark:from-amber-950/50 dark:via-slate-900/90 dark:to-orange-950/30 dark:border-amber-500/45 dark:shadow-amber-950/25 dark:ring-amber-500/25"
             >
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-90 dark:from-amber-500 dark:via-orange-500 dark:to-amber-400" />
-              <div className="flex items-start justify-between gap-3 pt-0.5">
-                <div className="flex min-w-0 gap-3">
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-[3px] rounded-t-2xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 dark:from-amber-500 dark:via-orange-500 dark:to-amber-400"
+                aria-hidden
+              />
+              <header className="relative z-10 flex min-h-13 items-center justify-between gap-3 border-b border-amber-200/60 pb-3.5 dark:border-amber-800/35">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <span
-                    className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-800 shadow-inner shadow-amber-500/10 dark:bg-amber-500/25 dark:text-amber-100"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-900 ring-1 ring-amber-400/30 dark:bg-amber-500/20 dark:text-amber-50 dark:ring-amber-500/35"
                     aria-hidden
                   >
-                    <FiClock className="h-5 w-5" />
+                    <FiClock className="h-[18px] w-[18px]" strokeWidth={2.25} />
                   </span>
-                  <div className="min-w-0">
-                    <h2 className="text-base font-semibold text-amber-950 dark:text-amber-100">Upcoming assignments</h2>
-                    <p className="mt-1 text-xs font-medium text-amber-900/75 dark:text-amber-200/80">
+                  <div className="min-w-0 py-0.5">
+                    <h2 className="text-base font-semibold leading-tight tracking-tight text-amber-950 dark:text-amber-50">
+                      Upcoming assignments
+                    </h2>
+                    <p className="mt-0.5 text-[11px] font-medium leading-snug text-amber-900/80 dark:text-amber-200/85">
                       Next deadline you still need to submit
                     </p>
                   </div>
                 </div>
                 <Link
                   to={`${STUDENT_BASE}/assignments`}
-                  className="shrink-0 rounded-xl border border-amber-300/80 bg-white/90 px-3 py-2 text-xs font-semibold text-amber-950 shadow-sm transition hover:border-amber-500 hover:bg-amber-50 dark:border-amber-600/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:border-amber-400 dark:hover:bg-amber-900/60"
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-amber-300/90 bg-white/95 px-3.5 text-xs font-semibold text-amber-950 shadow-sm transition hover:border-amber-500 hover:bg-amber-50/90 dark:border-amber-600/55 dark:bg-amber-950/50 dark:text-amber-50 dark:hover:border-amber-400 dark:hover:bg-amber-900/55"
                 >
                   View all
                 </Link>
-              </div>
+              </header>
               <ul className="mt-4 space-y-3">
                 {derived.upcomingAssignmentsPreview.length === 0 ? (
                   <li className="rounded-xl border border-dashed border-amber-300/70 bg-white/50 px-3 py-6 text-center text-sm text-amber-900/70 dark:border-amber-600/40 dark:bg-amber-950/20 dark:text-amber-200/70">

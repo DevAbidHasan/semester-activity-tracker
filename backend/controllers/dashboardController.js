@@ -1,5 +1,96 @@
 const { pool } = require('../config/db');
 
+/** Parse YYYY-MM-DD as UTC noon so progress math does not shift with server timezone. */
+function parseUtcDateOnly(value) {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const y = value.getFullYear();
+    const mo = value.getMonth() + 1;
+    const d = value.getDate();
+    return new Date(Date.UTC(y, mo - 1, d, 12, 0, 0));
+  }
+  const s = String(value).trim().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0));
+}
+
+function addCalendarDaysUtc(date, deltaDays) {
+  const d = new Date(date.getTime());
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d;
+}
+
+/** When only one boundary exists, assume a ~17-week term for a reasonable progress curve. */
+const DEFAULT_TERM_DAYS = 119;
+
+/**
+ * @returns {{ percent: number|null, meta: { totalDays: number, elapsedDays: number, mode: string }|null }}
+ */
+function computeSemesterProgress(sem) {
+  if (!sem) return { percent: null, meta: null };
+
+  const today = parseUtcDateOnly(new Date().toISOString().slice(0, 10));
+  if (!today) return { percent: null, meta: null };
+
+  const startRaw = parseUtcDateOnly(sem.start_date);
+  const endRaw = parseUtcDateOnly(sem.end_date);
+
+  if (startRaw && endRaw) {
+    if (endRaw.getTime() < startRaw.getTime()) {
+      return { percent: null, meta: null };
+    }
+    const totalMs = endRaw.getTime() - startRaw.getTime();
+    const elapsedMs = today.getTime() - startRaw.getTime();
+    const doneMs = Math.min(Math.max(elapsedMs, 0), totalMs <= 0 ? 0 : totalMs);
+    const percent =
+      totalMs > 0
+        ? Math.round((doneMs / totalMs) * 1000) / 10
+        : 100;
+    const totalDays = Math.max(1, Math.round(totalMs / 86400000));
+    const elapsedDays = Math.min(Math.max(Math.round(doneMs / 86400000), 0), totalDays);
+    return {
+      percent: Math.min(100, Math.max(0, percent)),
+      meta: {
+        mode: 'range',
+        totalDays,
+        elapsedDays,
+      },
+    };
+  }
+
+  if (startRaw && !endRaw) {
+    const elapsedDays = Math.max(0, Math.round((today.getTime() - startRaw.getTime()) / 86400000));
+    const pct = Math.min(100, (elapsedDays / DEFAULT_TERM_DAYS) * 100);
+    return {
+      percent: Math.round(pct * 10) / 10,
+      meta: {
+        mode: 'start-only',
+        totalDays: DEFAULT_TERM_DAYS,
+        elapsedDays: Math.min(elapsedDays, DEFAULT_TERM_DAYS),
+      },
+    };
+  }
+
+  if (!startRaw && endRaw) {
+    const impliedStart = addCalendarDaysUtc(endRaw, -DEFAULT_TERM_DAYS);
+    const totalMs = endRaw.getTime() - impliedStart.getTime();
+    const elapsedMs = today.getTime() - impliedStart.getTime();
+    const doneMs = Math.min(Math.max(elapsedMs, 0), Math.max(totalMs, 1));
+    const percent = Math.round((doneMs / Math.max(totalMs, 1)) * 1000) / 10;
+    return {
+      percent: Math.min(100, Math.max(0, percent)),
+      meta: {
+        mode: 'end-only',
+        totalDays: Math.max(1, Math.round(totalMs / 86400000)),
+        elapsedDays: Math.round(doneMs / 86400000),
+      },
+    };
+  }
+
+  return { percent: null, meta: null };
+}
+
 /**
  * Aggregated semester tracker stats for the authenticated user.
  */
@@ -13,16 +104,7 @@ async function stats(req, res, next) {
     );
     const sem = semRows[0];
 
-    let semesterProgress = null;
-    if (sem && sem.start_date && sem.end_date) {
-      const start = new Date(sem.start_date);
-      const end = new Date(sem.end_date);
-      const now = new Date();
-      const total = end - start;
-      const done = Math.min(Math.max(now - start, 0), total);
-      semesterProgress =
-        total > 0 ? Math.round((done / total) * 1000) / 10 : sem.is_current ? 100 : 0;
-    }
+    const { percent: semesterProgress, meta: semesterProgressMeta } = computeSemesterProgress(sem);
 
     const [assignCountRows] = await pool.query(
       `SELECT
@@ -102,11 +184,31 @@ async function stats(req, res, next) {
       courseSessionsSql(27),
     ]);
 
+    const dateOnlyField = (v) => {
+      if (v == null || v === '') return null;
+      if (v instanceof Date && !Number.isNaN(v.getTime())) {
+        const y = v.getFullYear();
+        const mo = v.getMonth() + 1;
+        const d = v.getDate();
+        return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      }
+      const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(v).trim());
+      return m ? m[1] : null;
+    };
+
     res.json({
       success: true,
       data: {
-        currentSemester: sem ? { id: sem.id, name: sem.name, startDate: sem.start_date, endDate: sem.end_date } : null,
+        currentSemester: sem
+          ? {
+              id: sem.id,
+              name: sem.name,
+              startDate: dateOnlyField(sem.start_date),
+              endDate: dateOnlyField(sem.end_date),
+            }
+          : null,
         semesterProgressPercent: semesterProgress,
+        semesterProgressMeta: semesterProgressMeta,
         assignments: {
           total: Number(assignCounts.total) || 0,
           completed: Number(assignCounts.completed) || 0,
